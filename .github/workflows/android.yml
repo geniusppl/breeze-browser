@@ -1,32 +1,40 @@
 name: Build APK
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Unpack project zip if present
+
+      - name: Unpack project zip
         run: |
-          if [ -f browser-v1.zip ]; then
-            unzip -o browser-v1.zip
-            cp -r browser-v1/. .
-            rm -f browser-v1.zip
-          fi
-          ls -la
+          unzip -o smartcookieweb.zip
+          cp -r smartcookieweb/. .
+          rm -f smartcookieweb.zip
+          rm -rf smartcookieweb
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-      - uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: "8.7"
+
+      - name: Ensure Android SDK platform 37
+        run: |
+          sdkmanager "platforms;android-37" "build-tools;35.0.0" || true
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
       - name: Build debug APK
-        run: gradle assembleDebug --stacktrace
+        run: ./gradlew assembleScMainDebug --stacktrace
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: breeze-browser-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: smartcookie-debug
+          path: app/build/outputs/apk/scMain/debug/*.apk
